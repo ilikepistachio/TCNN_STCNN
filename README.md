@@ -2,7 +2,7 @@ Project website: [http://crcv.ucf.edu/projects/TCNN/](http://crcv.ucf.edu/projec
 
 # Tube Convolutional Neural Network (T-CNN) for Action Detection in Videos
 
-By Rui Hou.
+By Rui Hou, Chen Chen and Mubarak Shah
 
 ### Introduction:
 
