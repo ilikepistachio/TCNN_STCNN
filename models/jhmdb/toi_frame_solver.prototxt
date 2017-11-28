@@ -1,0 +1,18 @@
+train_net: "models/jhmdb/toi_frame_train.prototxt"
+
+base_lr: 0.0001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 20000
+display: 20
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0005
+
+max_iter: 40000
+snapshot: 1000
+snapshot_prefix: "/home/rhou/models/jhmdb_frame_300_400_v2"
+# solver mode: CPU or GPU
+solver_mode: GPU
+
+iter_size: 4

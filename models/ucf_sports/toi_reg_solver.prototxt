@@ -1,0 +1,18 @@
+train_net: "models/toi_reg_train.prototxt"
+
+base_lr: 0.0001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 15000
+display: 10
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0005
+
+max_iter: 20000
+snapshot: 1000
+snapshot_prefix: "/media/rhou/9f56a9dd-d2e1-47f2-8984-fa1f0a54aa1d/models/sports_reg_300_400_2"
+# solver mode: CPU or GPU
+solver_mode: GPU
+
+iter_size: 4
