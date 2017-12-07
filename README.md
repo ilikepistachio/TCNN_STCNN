@@ -31,7 +31,7 @@ If you find T-CNN useful, please consider citing:
 - Hint: please refer to [C3D-v1.0](https://github.com/facebook/C3D/tree/master/C3D-v1.0) and [Caffe](https://github.com/BVLC/caffe) for more details about compilation such as making your own Makefile.config
 - For the sake of using our code smoothly, please first get familiar with [C3D](https://github.com/facebook/C3D).
 
-### Run demo: (TBD in 1 week)
+### Run demo:
 - This demo is designed to let users to have a quick try of CDC feature extraction.
 - More details of this demo:
 1. we provide input data in `demo/data/window` along with input data list file `demo/data/test.lst`
@@ -39,10 +39,11 @@ If you find T-CNN useful, please consider citing:
 3. run the demo: `cd demo; ./xfeat.sh;`
 4. output results will be stored in `demo/feat`
 
-### Reproduce results on UCF Sports dataset:
+### Reproduce results on J-HMDB dataset:
 - Data preparation
-1. first extract all frames in the following folder which will be used in the next step python file: `inputdir = '/DATA_ROOT/ucfsports'`
-2. Run `python datasets/ucf_sports.py` to generate the bin files and the list file for the test set.
+1. Move to the root directory of this project. e.g. `cd ~/tcnn`
+2. Run the script to download and extract frames, annotations and splits of dataset `bash prepre_jhmdb.sh`
+3. The generated dataset is located at `./data/jhmdb`
 
 - T-CNN network prediction (TBD in 1 week)
 1. `cd THUMOS14/test` and you will see needed files for using CDC network to do prediction (i.e. feature extraction of the last layer) and outputs will be stored in `feat`
