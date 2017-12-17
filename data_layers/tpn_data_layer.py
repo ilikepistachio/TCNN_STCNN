@@ -7,7 +7,7 @@ sys.path.insert(0, '/home/rhou/caffe/python')
 import caffe
 from dataset.jhmdb import jhmdb
 import numpy as np
-#from utils.cython_bbox import bbox_overlaps
+from utils.cython_bbox import bbox_overlaps
 
 class DataLayer(caffe.Layer):
   def setup(self, bottom, top):
@@ -16,28 +16,27 @@ class DataLayer(caffe.Layer):
     self._height = 240
     self._width = 320
     self.dataset = jhmdb('train', [self._height, self._width], split=1)
-    self.anchors = self.dataset.get_anchors()
+    self.anchors, self.valid_idx, self._anchor_dims = self.dataset.get_anchors()
     self.num_boxes = 32
 
   def reshape(self, bottom, top):
     # Clip data.
     top[0].reshape(self._batch_size, 3, self._depth, self._height, self._width)
     # Ground truth labels.
-    top[1].reshape(self._batch_size * self.num_boxes)
+    top[1].reshape(self._batch_size, 2, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2] / 2)
     # Ground truth tois.
-    top[2].reshape(self._batch_size * self.num_boxes, 5)
+    #top[2].reshape(self._batch_size * self.num_boxes, 5)
 
   def forward(self, bottom, top):
     [clips, labels, tmp_bboxes, box_idx] \
       = self.dataset.next_batch(self._batch_size, self._depth)
     batch_clip = clips.transpose((0, 4, 1, 2, 3))
-    batch_tois = np.empty((self._batch_size, 5))
-    batch_labels = np.empty((self._batch_size))
+    batch_labels = np.empty((self._batch_size, 2, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2] / 2))
 
     u_i = np.unique(box_idx)
     for i in u_i:
       curr_idx = np.where(box_idx == i)[0]
-      box = tmp_bboxes[curr_idx, :, 1 : 5]
+      box = tmp_bboxes[curr_idx, :, :]
       gt_bboxes = np.array(np.mean(box, axis=1)) / 16
 
       overlaps = bbox_overlaps(
@@ -46,6 +45,15 @@ class DataLayer(caffe.Layer):
       max_overlaps = overlaps.max(axis=1)
       gt_argmax_overlaps = overlaps.argmax(axis=0)
 
+      curr_labels = np.ones(self._anchor_dims[0] *
+                            self._anchor_dims[1] *
+                            self._anchor_dims[2]) * (-1)
+      curr_labels[self.valid_idx[max_overlaps < 0.5]] = 0
+      curr_labels[self.valid_idx[max_overlaps > 0.6]] = 1
+      curr_labels[self.valid_idx[gt_argmax_overlaps]] = 1
+      batch_labels[i] = curr_labels.reshape((-1, 2)).transpose((1, 0))
+
+      '''
       curr_labels = np.ones(self.anchors.shape[0]) * (-1)
       curr_labels[max_overlaps < 0.5] = 0
       curr_labels[max_overlaps >= 0.6] = labels[i]
@@ -66,14 +74,10 @@ class DataLayer(caffe.Layer):
       batch_tois = np.vstack((batch_tois, curr_bboxes))
       batch_labels = np.hstack((batch_labels, curr_labels[inds]))
       i += 1
-
-
-    top[1].reshape(*batch_labels.shape)
-    top[2].reshape(*batch_tois.shape)
+      '''
 
     top[0].data[...] = batch_clip.astype(np.float32, copy=False)
     top[1].data[...] = batch_labels.astype(np.float32, copy=False)
-    top[2].data[...] = batch_tois.astype(np.float32, copy=False)
 
   def backward(self, top, propagate_down, bottom):
     """This layer does not propagate gradients."""

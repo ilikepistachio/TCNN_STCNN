@@ -71,8 +71,8 @@ class jhmdb():
   def get_anchors(self):
     base_anchors = np.load(
       self._data_path + '/cache/anchors_8_12.npy').transpose()
-    bottom_height = np.ceil(self._height / 16.0)
-    bottom_width = np.ceil(self._width / 16.0)
+    bottom_height = int(np.ceil(self._height / 16.0))
+    bottom_width = int(np.ceil(self._width / 16.0))
     shift_x = np.arange(0, bottom_width)
     shift_y = np.arange(0, bottom_height)
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
@@ -95,7 +95,8 @@ class jhmdb():
       (all_anchors[:, 2] < bottom_width) &  # width
       (all_anchors[:, 3] < bottom_height)  # height
     )[0]
-    return all_anchors[inds_inside]
+
+    return all_anchors[inds_inside], inds_inside, (A, bottom_height, bottom_width)
 
   def _load_annotations(self, video):
     """Read video annotations from text files.
