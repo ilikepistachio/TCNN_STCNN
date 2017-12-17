@@ -45,7 +45,7 @@ If you find T-CNN useful, please consider citing:
 2. Run the script to download and extract frames, annotations and splits of dataset `bash prepre_jhmdb.sh`
 3. The generated dataset is located at `./data/jhmdb`
 
-- T-CNN network prediction (TBD in 1 week)
+- T-CNN network prediction
 1. `cd THUMOS14/test` and you will see needed files for using CDC network to do prediction (i.e. feature extraction of the last layer) and outputs will be stored in `feat`
 2. the trained model used for feature extraction is `$TCNN_ROOT/models/ucf_sports/c3d_seg_iter_33200.caffemodel`
 3. the last layer of our trained model has 10 nodes corresponding to 11 possible frame-level classes(from the first to the last: background, action1-10)
