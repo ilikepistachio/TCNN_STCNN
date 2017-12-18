@@ -3,9 +3,13 @@ layer {
   name: "data"
   type: "Python"
   top: "data"
-  top: "label"
+  top: "tois"
+  top: "labels"
+  top: "targets"
+  top: "mask"
+  top: "toi2"
   python_param {
-    module: 'data_layers.tpn_data_layer'
+    module: 'data_layers.tpn_data_v3'
     layer: 'DataLayer'
   }
 }
@@ -339,12 +343,96 @@ layer {
     shape { dim: -1 dim: 512 dim: 15 dim: 20}
   }
 }
+layer {
+  name: "roipool"
+  type: "ROIPooling"
+  bottom: "reshape"
+  bottom: "toi2"
+  top: "roi_pool1"
+  roi_pooling_param {
+    pooled_h: 4
+    pooled_w: 4
+    spatial_scale: 1 # 1 / 16
+  }
+}
+# ----------------- Additional layer group -------------
+layer {
+  name: "norm1"
+  type: "Normalization"
+  bottom: "roi_pool1"
+  top: "norm1"
+}
+layer {
+  name: "transpose"
+  type: "Clip2Img"
+  bottom: "conv2"
+  top: "transpose"
+}
+layer {
+  name: "roipool2"
+  type: "ROIPooling"
+  bottom: "transpose"
+  bottom: "tois"
+  top: "roi_pool2"
+  roi_pooling_param {
+    pooled_h: 16
+    pooled_w: 16
+    spatial_scale: 8 # 1 / 16
+  }
+}
+layer {
+  name: "norm2"
+  type: "Normalization"
+  bottom: "roi_pool2"
+  top: "norm2"
+}
+layer {
+  name: "concat"
+  type: "Concat"
+  bottom: "norm1"
+  bottom: "norm2"
+  top: "concat"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "fcc"
+  type: "InnerProduct"
+  bottom: "concat"
+  top: "fcc"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 8192
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layer {
+  name: "reluc"
+  type: "ReLU"
+  bottom: "fcc"
+  top: "fcc"
+}
 # ----------------- 6th layer group --------------------
 layer {
-  name: "conv1x1"
-  type: "Convolution"
-  bottom: "reshape"
-  top: "conv1x1"
+  name: "fc6"
+  type: "InnerProduct"
+  bottom: "fcc"
+  top: "fc6"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -353,13 +441,11 @@ layer {
     lr_mult: 2
     decay_mult: 0
   }
-  convolution_param {
-    num_output: 512
-    kernel_size: 1
-    pad: 0
+  inner_product_param {
+    num_output: 4096
     weight_filler {
       type: "gaussian"
-      std: 0.01
+      std: 0.005
     }
     bias_filler {
       type: "constant"
@@ -368,16 +454,26 @@ layer {
   }
 }
 layer {
-  name: "relu1x1"
+  name: "relu6"
   type: "ReLU"
-  bottom: "conv1x1"
-  top: "conv1x1"
+  bottom: "fc6"
+  top: "fc6"
 }
 layer {
-  name: "conv_rec"
-  type: "Convolution"
-  bottom: "conv1x1"
-  top: "conv_rec"
+  name: "drop6"
+  type: "Dropout"
+  bottom: "fc6"
+  top: "fc6"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+# ----------------- 7th layer group --------------------
+layer {
+  name: "fc7"
+  type: "InnerProduct"
+  bottom: "fc6"
+  top: "fc7"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -386,10 +482,49 @@ layer {
     lr_mult: 2
     decay_mult: 0
   }
-  convolution_param {
-    num_output: 24
-    kernel_size: 1
-    pad: 0
+  inner_product_param {
+    num_output: 4096
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layer {
+  name: "relu7"
+  type: "ReLU"
+  bottom: "fc7"
+  top: "fc7"
+}
+layer {
+  name: "drop7"
+  type: "Dropout"
+  bottom: "fc7"
+  top: "fc7"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+# ----------------- loss layer group --------------------
+layer {
+  name: "fc8-2"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8-2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 4
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -400,20 +535,69 @@ layer {
     }
   }
 }
+#layer {
+#  name: "prob"
+#  type: "Softmax"
+#  bottom: "fc8"
+#  top: "prob"
+#}
 layer {
-  name: "rec_reshape"
-  type: "Reshape"
-  bottom: "conv_rec"
-  top: "rec_score"
-  reshape_param {
-    shape { dim: 0 dim: 2 dim: -1}
+  name: "mask"
+  type: "Eltwise"
+  bottom: "fc8-2"
+  bottom: "mask"
+  top: "fc88"
+  propagate_down: 1
+  propagate_down: 0
+  eltwise_param {
+    operation: PROD
   }
 }
 layer {
-  name: "tpn_loss_cls"
+  name: "l2loss"
+  type: "EuclideanLoss"
+  bottom: "fc88"
+  bottom: "targets"
+  top: "l2_error"
+  propagate_down: 1
+  propagate_down: 0
+}
+layer {
+  name: "fc8-3"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8-3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+#layer {
+#  name: "prob"
+#  type: "Softmax"
+#  bottom: "fc8"
+#  top: "prob"
+#}
+layer {
+  name: "tpn_cls"
   type: "SoftmaxWithLoss"
-  bottom: "rec_score"
-  bottom: "label"
+  bottom: "fc8-3"
+  bottom: "labels"
   propagate_down: 1
   propagate_down: 0
   top: "tpn_cls_loss"
@@ -423,4 +607,3 @@ layer {
     normalize: true
   }
 }
-

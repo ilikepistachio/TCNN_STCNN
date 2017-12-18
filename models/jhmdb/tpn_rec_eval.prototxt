@@ -1,12 +1,10 @@
 #name: ucf_c3d
 layer {
   name: "data"
-  type: "Python"
+  type: "Input"
   top: "data"
-  top: "label"
-  python_param {
-    module: 'data_layers.tpn_data_layer'
-    layer: 'DataLayer'
+  input_param {
+    shape: { dim: 1 dim: 3 dim: 8 dim: 240 dim: 320 }
   }
 }
 # ----------------- 1st layer group --------------------
@@ -410,17 +408,8 @@ layer {
   }
 }
 layer {
-  name: "tpn_loss_cls"
-  type: "SoftmaxWithLoss"
+  name: "loss"
+  type: "Softmax"
   bottom: "rec_score"
-  bottom: "label"
-  propagate_down: 1
-  propagate_down: 0
-  top: "tpn_cls_loss"
-  loss_weight: 1
-  loss_param {
-    ignore_label: -1
-    normalize: true
-  }
+  top: "loss"
 }
-

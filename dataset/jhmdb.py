@@ -52,7 +52,8 @@ class jhmdb():
     if name == 'train':
       self._vddb = self.keeps(1)
     else:
-      self._vddb = self.keeps(2)
+      if name == 'val':
+        self._vddb = self.keeps(2)
 
   @property
   def vddb(self):
@@ -95,7 +96,6 @@ class jhmdb():
       (all_anchors[:, 2] < bottom_width) &  # width
       (all_anchors[:, 3] < bottom_height)  # height
     )[0]
-
     return all_anchors[inds_inside], inds_inside, (A, bottom_height, bottom_width)
 
   def _load_annotations(self, video):
@@ -269,11 +269,13 @@ class jhmdb():
     video = self._vddb[self._curr_idx]['video'] - self._mean_frame
     gt_bboxes = self._vddb[self._curr_idx]['gt_bboxes']
     gt_label = self._vddb[self._curr_idx]['gt_label']
+    vid_name = self._vddb[self._curr_idx]['video_name']
+    print(self._curr_idx)
     self._curr_idx += 1
     return video, \
            gt_bboxes, \
            gt_label, \
-           self._vddb[self._curr_idx]['video_name'], \
+           vid_name, \
            self._curr_idx == self.size
 
   def compute_mean_frame(self):

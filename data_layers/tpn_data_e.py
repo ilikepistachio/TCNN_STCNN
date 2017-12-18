@@ -9,29 +9,52 @@ from dataset.jhmdb import jhmdb
 import numpy as np
 from utils.cython_bbox import bbox_overlaps
 
-class DataLayer(caffe.Layer):
-  def setup(self, bottom, top):
+class DataEval():
+  def __init__(self, net, model):
     self._batch_size = 1
     self._depth = 8
     self._height = 240
     self._width = 320
     self.dataset = jhmdb('train', [self._height, self._width], split=1)
     self.anchors, self.valid_idx, self._anchor_dims = self.dataset.get_anchors()
-    self.num_boxes = 32
 
-  def reshape(self, bottom, top):
-    # Clip data.
-    top[0].reshape(self._batch_size, 3, self._depth, self._height, self._width)
-    # Ground truth labels.
-    top[1].reshape(self._batch_size, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
+    caffe.set_mode_gpu()
+    self._net = caffe.Net(net, model, caffe.TEST)
 
-  def forward(self, bottom, top):
-    [clips, labels, tmp_bboxes, box_idx] \
-      = self.dataset.next_batch(self._batch_size, self._depth)
-    batch_clip = clips.transpose((0, 4, 1, 2, 3))
-    batch_labels = np.empty((self._batch_size, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2]))
+  def forward(self):
+    [clips, gt_bboxes, gt_label, vid_name, is_last] \
+      = self.dataset.next_val_video()
 
-    u_i = np.unique(box_idx)
+
+    num_frames = clips.shape[0]
+    for i in xrange(num_frames - self._depth + 1):
+      batch_clip = np.expand_dims(clips[i : i + self._depth].transpose(3, 0, 1, 2), axis=0)
+      self._net.blobs['data'].data[...] = batch_clip.astype(np.float32,
+                                                            copy=False)
+
+      self._net.forward()
+      result = self._net.blobs['loss'].data[0, 1]
+      result = result.reshape(self._anchor_dims).transpose((1, 2, 0))
+      curr_gt = np.mean(gt_bboxes[i : i + self._depth, 1 : 5], axis=0) / 16
+      curr_gt = np.expand_dims(curr_gt, axis=0)
+      overlaps = bbox_overlaps(
+        np.ascontiguousarray(self.anchors, dtype=np.float),
+        np.ascontiguousarray(curr_gt, dtype=np.float))
+      max_overlaps = overlaps.max(axis=1)
+      gt_argmax_overlaps = overlaps.argmax(axis=0)
+
+      curr_labels = np.ones(self._anchor_dims[0] *
+                            self._anchor_dims[1] *
+                            self._anchor_dims[2]) * (-1)
+      curr_labels[self.valid_idx[max_overlaps < 0.5]] = 0
+      curr_labels[self.valid_idx[max_overlaps > 0.6]] = 1
+      curr_labels[self.valid_idx[gt_argmax_overlaps]] = 1
+      curr_labels = curr_labels.reshape(
+        (self._anchor_dims[1], self._anchor_dims[2], self._anchor_dims[0]))
+
+      pass
+
+    '''
     for i in u_i:
       curr_idx = np.where(box_idx == i)[0]
       box = tmp_bboxes[curr_idx, :, :]
@@ -49,10 +72,9 @@ class DataLayer(caffe.Layer):
       curr_labels[self.valid_idx[max_overlaps < 0.5]] = 0
       curr_labels[self.valid_idx[max_overlaps > 0.6]] = 1
       curr_labels[self.valid_idx[gt_argmax_overlaps]] = 1
-      batch_labels[i, 0] = curr_labels.reshape((self._anchor_dims[1], self._anchor_dims[2], self._anchor_dims[0])).transpose((2, 0, 1)).reshape(-1)
+      batch_labels[i] = curr_labels.reshape((-1, 2)).transpose((1, 0))
 
-
-      '''
+      
       curr_labels = np.ones(self.anchors.shape[0]) * (-1)
       curr_labels[max_overlaps < 0.5] = 0
       curr_labels[max_overlaps >= 0.6] = labels[i]
@@ -73,12 +95,5 @@ class DataLayer(caffe.Layer):
       batch_tois = np.vstack((batch_tois, curr_bboxes))
       batch_labels = np.hstack((batch_labels, curr_labels[inds]))
       i += 1
-'''
+      '''
 
-    top[0].data[...] = batch_clip.astype(np.float32, copy=False)
-    top[1].data[...] = batch_labels.astype(np.float32, copy=False)
-    #top[2].data[...] = batch_tois.astype(np.float32, copy=False)
-
-  def backward(self, top, propagate_down, bottom):
-    """This layer does not propagate gradients."""
-    pass

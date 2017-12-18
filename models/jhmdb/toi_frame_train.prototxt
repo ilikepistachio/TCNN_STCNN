@@ -561,3 +561,43 @@ layer {
   propagate_down: 1
   propagate_down: 0
 }
+layer {
+  name: "fc8-3"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8-3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+#layer {
+#  name: "prob"
+#  type: "Softmax"
+#  bottom: "fc8"
+#  top: "prob"
+#}
+layer {
+  name: "l2loss"
+  type: "EuclideanLoss"
+  bottom: "fc88"
+  bottom: "targets"
+  top: "l2_error"
+  propagate_down: 1
+  propagate_down: 0
+}

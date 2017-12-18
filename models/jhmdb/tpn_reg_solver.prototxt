@@ -1,4 +1,4 @@
-train_net: "models/jhmdb/tpn_rec_train_v2.prototxt"
+train_net: "models/jhmdb/tpn_reg_train.prototxt"
 
 base_lr: 0.0001
 lr_policy: "step"
@@ -11,7 +11,7 @@ weight_decay: 0.0005
 
 max_iter: 80000
 snapshot: 5000
-snapshot_prefix: "/home/rhou/models/jhmdb_rec_240_320_v2"
+snapshot_prefix: "/home/rhou/models/jhmdb_reg_240_320"
 # solver mode: CPU or GPU
 solver_mode: GPU
 
