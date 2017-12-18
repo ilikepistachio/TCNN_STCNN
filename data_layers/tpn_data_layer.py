@@ -23,7 +23,7 @@ class DataLayer(caffe.Layer):
     # Clip data.
     top[0].reshape(self._batch_size, 3, self._depth, self._height, self._width)
     # Ground truth labels.
-    top[1].reshape(self._batch_size, 2, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2] / 2)
+    top[1].reshape(self._batch_size, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
     # Ground truth tois.
     #top[2].reshape(self._batch_size * self.num_boxes, 5)
 
@@ -31,13 +31,13 @@ class DataLayer(caffe.Layer):
     [clips, labels, tmp_bboxes, box_idx] \
       = self.dataset.next_batch(self._batch_size, self._depth)
     batch_clip = clips.transpose((0, 4, 1, 2, 3))
-    batch_labels = np.empty((self._batch_size, 2, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2] / 2))
+    batch_labels = np.empty((self._batch_size, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2]))
 
     u_i = np.unique(box_idx)
     for i in u_i:
       curr_idx = np.where(box_idx == i)[0]
       box = tmp_bboxes[curr_idx, :, :]
-      gt_bboxes = np.array(np.mean(box, axis=1)) / 16
+      gt_bboxes = np.mean(box, axis=1) / 16
 
       overlaps = bbox_overlaps(
         np.ascontiguousarray(self.anchors, dtype=np.float),
@@ -51,7 +51,8 @@ class DataLayer(caffe.Layer):
       curr_labels[self.valid_idx[max_overlaps < 0.5]] = 0
       curr_labels[self.valid_idx[max_overlaps > 0.6]] = 1
       curr_labels[self.valid_idx[gt_argmax_overlaps]] = 1
-      batch_labels[i] = curr_labels.reshape((-1, 2)).transpose((1, 0))
+      batch_labels[i, 0] = curr_labels.reshape((self._anchor_dims[1], self._anchor_dims[2], self._anchor_dims[0])).transpose((2, 0, 1)).reshape(-1)
+
 
       '''
       curr_labels = np.ones(self.anchors.shape[0]) * (-1)

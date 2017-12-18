@@ -15,4 +15,4 @@ snapshot_prefix: "/home/rhou/models/jhmdb_rec_240_320"
 # solver mode: CPU or GPU
 solver_mode: GPU
 
-iter_size: 4
+iter_size: 16
