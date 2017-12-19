@@ -1,4 +1,4 @@
-train_net: "models/jhmdb/tpn_rec_train_v2.prototxt"
+train_net: "models/jhmdb/tpn_rec_train_v3.prototxt"
 
 base_lr: 0.0001
 lr_policy: "step"

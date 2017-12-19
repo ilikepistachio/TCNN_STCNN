@@ -8,6 +8,7 @@ import caffe
 from dataset.jhmdb import jhmdb
 import numpy as np
 from utils.cython_bbox import bbox_overlaps
+from utils.bbox_transform import bbox_transform
 
 class DataLayer(caffe.Layer):
   def setup(self, bottom, top):
@@ -24,12 +25,26 @@ class DataLayer(caffe.Layer):
     top[0].reshape(self._batch_size, 3, self._depth, self._height, self._width)
     # Ground truth labels.
     top[1].reshape(self._batch_size * self._depth, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
+    # Diff with ground truth.
+    top[2].reshape(self._batch_size * self._depth, 4, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
+    # Masks.
+    top[3].reshape(self._batch_size * self._depth, 4,
+                   self._anchor_dims[0] * self._anchor_dims[1] *
+                   self._anchor_dims[2])
 
   def forward(self, bottom, top):
     [clips, labels, tmp_bboxes, box_idx] \
       = self.dataset.next_batch(self._batch_size, self._depth)
     batch_clip = clips.transpose((0, 4, 1, 2, 3))
-    batch_labels = np.empty((self._batch_size * self._depth, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2]))
+    batch_labels = np.empty((self._batch_size * self._depth, 1,
+                             self._anchor_dims[0] * self._anchor_dims[1] *
+                             self._anchor_dims[2]))
+    batch_diff = np.empty((self._batch_size * self._depth, 4,
+                           self._anchor_dims[0] * self._anchor_dims[1] *
+                           self._anchor_dims[2]))
+    batch_mask = np.empty((self._batch_size * self._depth, 4,
+                           self._anchor_dims[0] * self._anchor_dims[1] *
+                           self._anchor_dims[2]))
 
     for i in xrange(self._depth):
       box = tmp_bboxes[0, :, :]
@@ -47,12 +62,30 @@ class DataLayer(caffe.Layer):
       curr_labels[self.valid_idx[max_overlaps < 0.5]] = 0
       curr_labels[self.valid_idx[max_overlaps > 0.6]] = 1
       curr_labels[self.valid_idx[gt_argmax_overlaps]] = 1
-      batch_labels[i, 0] = curr_labels.reshape((self._anchor_dims[1], self._anchor_dims[2], self._anchor_dims[0])).transpose((2, 0, 1)).reshape(-1)
+      batch_labels[i, 0] = curr_labels.reshape((self._anchor_dims[1],
+                                                self._anchor_dims[2],
+                                                self._anchor_dims[
+                                                  0])).transpose(
+        (2, 0, 1)).reshape(-1)
 
+      pos_boxes = self.anchors[max_overlaps > 0.6]
+      curr_diff = np.zeros((self._anchor_dims[0] *
+                            self._anchor_dims[1] *
+                            self._anchor_dims[2], 4))
+      curr_diff[self.valid_idx[max_overlaps > 0.6]] \
+        = bbox_transform(pos_boxes, gt_bboxes)
+      batch_diff[i] = curr_diff.reshape((self._anchor_dims[1],
+                                         self._anchor_dims[2],
+                                         self._anchor_dims[0], 4)).transpose(
+        (3, 2, 0, 1)).reshape((4, -1))
+      curr_mask = batch_labels[i]
+      curr_mask[curr_mask < 1] = 0
+      batch_mask[i] = np.repeat(curr_mask, 4, axis=0)
 
     top[0].data[...] = batch_clip.astype(np.float32, copy=False)
     top[1].data[...] = batch_labels.astype(np.float32, copy=False)
-    #top[2].data[...] = batch_tois.astype(np.float32, copy=False)
+    top[2].data[...] = batch_diff.astype(np.float32, copy=False)
+    top[3].data[...] = batch_mask.astype(np.float32, copy=False)
 
   def backward(self, top, propagate_down, bottom):
     """This layer does not propagate gradients."""
