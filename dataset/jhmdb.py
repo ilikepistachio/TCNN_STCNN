@@ -278,6 +278,23 @@ class jhmdb():
            vid_name, \
            self._curr_idx == self.size
 
+  def next_rec_video(self):
+    if self._curr_idx == self.size:
+      self._curr_idx = 0
+      np.random.shuffle(self._vddb)
+    video = self._vddb[self._curr_idx]['video'] - self._mean_frame
+    gt_bboxes = self._vddb[self._curr_idx]['gt_bboxes'] * 1.25
+    gt_label = self._vddb[self._curr_idx]['gt_label']
+    vid_name = self._vddb[self._curr_idx]['video_name']
+    pred = np.load('data/jhmdb/tpn/{}/bboxes.npy'.format(vid_name)) * 1.25
+    self._curr_idx += 1
+    return video, \
+           gt_bboxes, \
+           gt_label, \
+           vid_name, \
+           pred, \
+           self._curr_idx == self.size
+
   def compute_mean_frame(self):
     sum_frame = np.zeros((self._height, self._width, 3), dtype=np.float32)
     num_frames = 0
