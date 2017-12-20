@@ -1,11 +1,14 @@
-from data_layers.toi_frame_data_eval import RegDataLayer
+from data_layers.tpn_data_eval import DataEval
 import numpy as np
 
 if __name__ == '__main__':
-  net = '/home/rhou/videoflow/models/toi_rec_eval.prototxt'
-  model = '/media/rhou/9f56a9dd-d2e1-47f2-8984-fa1f0a54aa1d/models/thumos_rec_300_400_iter_20000.caffemodel'
-  r = RegDataLayer()
-  r.forward()
+  net = '/home/rhou/tcnn/models/jhmdb/tpn_rec_eval_v3.prototxt'
+  model = '/home/rhou/jhmdb_rec_240_320_v2_iter_25000.caffemodel'
+  r = DataEval(net, model)
+  while(1):
+    flag = r.forward()
+    if (flag):
+      break
   '''
   for i in xrange(17):
     result = r.forward(i)
