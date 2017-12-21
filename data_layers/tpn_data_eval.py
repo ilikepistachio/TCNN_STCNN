@@ -18,7 +18,7 @@ class DataEval():
     self._depth = 8
     self._height = 240
     self._width = 320
-    self.dataset = jhmdb('eval', [self._height, self._width], split=1)
+    self.dataset = jhmdb('val', [self._height, self._width], split=1)
     self.anchors, self.valid_idx, self._anchor_dims = self.dataset.get_anchors()
 
     caffe.set_mode_gpu()
@@ -28,8 +28,8 @@ class DataEval():
     [clips, gt_bboxes, gt_label, vid_name, is_last] \
       = self.dataset.next_val_video()
 
-    if not(os.path.isdir('/home/rhou/tmp/{}'.format(vid_name))):
-      os.makedirs('/home/rhou/tmp/{}'.format(vid_name))
+    if not(os.path.isdir('data/jhmdb/tpn/{}'.format(vid_name))):
+      os.makedirs('data/jhmdb/tpn/{}'.format(vid_name))
     num_frames = clips.shape[0]
     scores = np.zeros((num_frames, 3600))
     weights = np.zeros(num_frames)
@@ -81,16 +81,20 @@ class DataEval():
       prev_state = curr_state
 
     selected = prev_state[curr_s.argmax()]
+    det = np.empty((num_frames, 4))
     for i in xrange(num_frames):
+      det[i] = preds[i][selected[i]] * 16
+
+      '''
       curr = (preds[i][selected[i]] * 16).astype(np.uint32)
       img = cv2.imread(
         '/home/rhou/JHMDB/Rename_Images/{}/{:05d}.png'.format(vid_name, i + 1))
       cv2.rectangle(img, (curr[0], curr[1]), (curr[2], curr[3]),
                     color=(0, 0, 255))
       cv2.imwrite('/home/rhou/tmp/{}/{:05d}.png'.format(vid_name, i + 1), img)
+      '''
 
-
-
+    np.save('data/jhmdb/tpn/{}/bboxes.npy'.format(vid_name), det)
     return is_last
 
 def pred_bbox(anchors, diff):

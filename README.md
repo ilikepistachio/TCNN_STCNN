@@ -32,12 +32,11 @@ If you find T-CNN useful, please consider citing:
 - For the sake of using our code smoothly, please first get familiar with [C3D](https://github.com/facebook/C3D).
 
 ### Run demo:
-- This demo is designed to let users to have a quick try of CDC feature extraction.
+- This demo is designed to let users to have a quick try of tcnn feature extraction.
 - More details of this demo:
-1. we provide input data in `demo/data/window` along with input data list file `demo/data/test.lst`
-2. each input data sample is a 8-frames long window. In order to directly reuse `VIDEO_DATA` data format developed in [C3D-v1.0](https://github.com/facebook/C3D/tree/master/C3D-v1.0), each of our input data is stored in bin format and consists of pixel values stacked over time. We provide an example code for generating such bin file on UCF Sports data set in the next section.
-3. run the demo: `cd demo; ./xfeat.sh;`
-4. output results will be stored in `demo/feat`
+1. we provide input data in `data/jhmdb`. You can prepare the download the dataset by `bash prepre_jhmdb.sh`
+2. run the demo: `cd demo; ./xfeat.sh;`
+2. output results will be stored in `data/jhmdb/results`
 
 ### Reproduce results on J-HMDB dataset:
 - Data preparation
@@ -46,14 +45,15 @@ If you find T-CNN useful, please consider citing:
 3. The generated dataset is located at `./data/jhmdb`
 
 - T-CNN network prediction
-1. `cd THUMOS14/test` and you will see needed files for using CDC network to do prediction (i.e. feature extraction of the last layer) and outputs will be stored in `feat`
-2. the trained model used for feature extraction is `$TCNN_ROOT/models/ucf_sports/c3d_seg_iter_33200.caffemodel`
-3. the last layer of our trained model has 10 nodes corresponding to 11 possible frame-level classes(from the first to the last: background, action1-10)
-
+1. Download the trained model
+2. the last layer of our trained model has 22 nodes corresponding to 21 possible frame-level classes(from the first to the last: background, action1-22)
+3. Run `python tpn_eval.py` for bounding boxes on each frame.
+4. Run `python cls_eval.py` for recogntion prediction.
 
 ### Train your own model:
-- Prepare pre-trained model as init: as explained in the paper, we use weights in sports1m model (`model/sports1m_C3D/conv3d_deepnetA_sport1m_iter_1900000`) to init our CDC network.
-- Run 'toi_rec_train.sh' for training.
+- Prepare pre-trained model as init: as explained in the paper, we use weights in sports1m model (`wget www.cs.ucf.edu/~rhou/files/c3d_pretrain_model`) to init our network.
+- Run `bash tpn_train.sh` for training TPN.
+- Run `bash cls_train.sh` for recognition network.
 
 Please find our caffe implementation at [ruihou/mtcnn](https://github.com/ruihou/mtcnn)
 

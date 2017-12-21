@@ -15,7 +15,7 @@ class DataEval():
     self._depth = 8
     self._height = 300
     self._width = 400
-    self.dataset = jhmdb('eval', [self._height, self._width], split=1)
+    self.dataset = jhmdb('val', [self._height, self._width], split=1)
     self.anchors, self.valid_idx, self._anchor_dims = self.dataset.get_anchors()
 
     caffe.set_mode_gpu()

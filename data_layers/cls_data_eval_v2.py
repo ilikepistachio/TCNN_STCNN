@@ -16,7 +16,7 @@ class DataEval():
     self._depth = 8
     self._height = 300
     self._width = 400
-    self.dataset = jhmdb('eval', [self._height, self._width], split=1)
+    self.dataset = jhmdb('val', [self._height, self._width], split=1)
 
     caffe.set_mode_gpu()
     self._net = caffe.Net(net, model, caffe.TEST)
