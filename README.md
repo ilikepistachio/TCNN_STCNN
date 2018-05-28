@@ -1,5 +1,5 @@
 Project website: [http://crcv.ucf.edu/projects/TCNN/](http://crcv.ucf.edu/projects/TCNN/)
-
+# (News) we updated the ST-CNN for semantic segmentation in video
 # Tube Convolutional Neural Network (T-CNN) for Action Detection in Videos
 
 By Rui Hou, Chen Chen and Mubarak Shah
@@ -35,7 +35,6 @@ If you find T-CNN useful, please consider citing:
 - This demo is designed to let users to have a quick try of tcnn feature extraction.
 - More details of this demo:
 1. we provide input data in `data/jhmdb`. You can prepare the download the dataset by `bash prepre_jhmdb.sh`
-2. run the demo: `cd demo; ./xfeat.sh;`
 2. output results will be stored in `data/jhmdb/results`
 
 ### Reproduce results on J-HMDB dataset:
