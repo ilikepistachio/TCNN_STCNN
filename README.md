@@ -1,12 +1,32 @@
 Project website: [http://crcv.ucf.edu/projects/TCNN/](http://crcv.ucf.edu/projects/TCNN/)
-# (News) we updated the ST-CNN for semantic segmentation in video
 # Tube Convolutional Neural Network (T-CNN) for Action Detection in Videos
 
 By Rui Hou, Chen Chen and Mubarak Shah
 
-### Introduction:
+### Abstract:
 
-We propose an end-to-end deep network called Tube Convolutional Neural Network (T-CNN) for action detection in videos. The proposed architecture is a unified deep network that is able to recognize and localize action based on 3D convolution features. A video is first divided into equal length clips and next for each clip a set of tube proposals are generated based on 3D Convolutional Network (ConvNet) features. Finally, the tube proposals of different clips are linked together employing network flow and spatio-temporal action detection is performed using these linked video proposals. Extensive experiments on several video datasets demonstrate the superior performance of TCNN for classifying and localizing actions in b
+We propose an end-to-end deep network called Tube Convolutional Neural Network (T-CNN) for action detection in videos. The proposed architecture is a unified deep network that is able to recognize and localize action based on 3D convolution features. A video is first divided into equal length clips and next for each clip a set of tube proposals are generated based on 3D Convolutional Network (ConvNet) features. Finally, the tube proposals of different clips are linked together employing network flow and spatio-temporal action detection is performed using these linked video proposals. Extensive experiments on several video datasets demonstrate the superior performance of TCNN for classifying and localizing actions
+
+# (News) An End-to-end 3D Convolutional Neural Network for Action Detection and Segmentation in Videos
+
+### Abstract:
+Deep learning has been demonstrated to achieve excellent results for image classification and object detection. However,
+the impact of deep learning on video analysis (e.g. action detection and recognition) has not been that significant due to complexity of
+video data and lack of annotations. In addition, training deep neural networks on large scale video datasets is extremely
+computationally expensive. Previous convolutional neural networks (CNNs) based video action detection approaches usually consist of
+two major steps: frame-level action proposal generation and association of proposals across frames. Also, most of these methods
+employ two-stream CNN framework to handle spatial and temporal features separately. In this paper, we propose an end-to-end 3D
+CNN for action detection and segmentation in videos. The proposed architecture is a unified deep network that is able to recognize and
+localize action based on 3D convolution features. A video is first divided into equal length clips and next for each clip a set of tube
+proposals are generated based on 3D CNN features. Finally, the tube proposals of different clips are linked together and
+spatio-temporal action detection is performed using these linked video proposals. This top-down action detection approach explicitly
+relies on a set of good tube proposals to perform well and training the bounding box regression usually requires a large number of
+annotated samples. To remedy this, we further extend the 3D CNN to an encoder-decoder structure and formulate the localization
+problem as action segmentation. The foreground regions (i.e. action regions) for each frame are segmented first then the segmented
+foreground maps are used to generate the bounding boxes. This bottom-up approach effectively avoids tube proposal generation by
+leveraging the pixel-wise annotations of segmentation. The segmentation framework also can be readily applied to a general problem
+of video object segmentation. Extensive experiments on several video datasets demonstrate the superior performance of our approach
+for action detection and video object segmentation compared to the state-of-the-arts.
 
 This code has been tested on Ubuntu 16.04 with a single NVIDIA GeForce GTX TITAN Xp graphic card.
 
@@ -53,6 +73,10 @@ If you find T-CNN useful, please consider citing:
 - Prepare pre-trained model as init: as explained in the paper, we use weights in sports1m model (`wget www.cs.ucf.edu/~rhou/files/c3d_pretrain_model`) to init our network.
 - Run `bash tpn_train.sh` for training TPN.
 - Run `bash cls_train.sh` for recognition network.
+
+### Train/eval ST-CNN:
+- Run `bash st_train.sh`
+- Run `python st_eval.py`
 
 Please find our caffe implementation at [ruihou/mtcnn](https://github.com/ruihou/mtcnn)
 
