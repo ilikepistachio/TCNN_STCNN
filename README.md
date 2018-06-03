@@ -74,9 +74,5 @@ If you find T-CNN useful, please consider citing:
 - Run `bash tpn_train.sh` for training TPN.
 - Run `bash cls_train.sh` for recognition network.
 
-### Train/eval ST-CNN:
-- Run `bash st_train.sh`
-- Run `python st_eval.py`
-
-Please find our caffe implementation at [ruihou/mtcnn](https://github.com/ruihou/mtcnn)
-
+### ST-CNN demo:
+- Run `python demo.py`
