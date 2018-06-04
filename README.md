@@ -76,3 +76,6 @@ If you find T-CNN useful, please consider citing:
 
 ### ST-CNN demo:
 - Run `python demo.py`
+
+### ST-CNN training demo:
+- Run `bash demo_train.sh`
