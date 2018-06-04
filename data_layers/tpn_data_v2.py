@@ -24,9 +24,11 @@ class DataLayer(caffe.Layer):
     # Clip data.
     top[0].reshape(self._batch_size, 3, self._depth, self._height, self._width)
     # Ground truth labels.
-    top[1].reshape(self._batch_size * self._depth, 1, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
+    top[1].reshape(self._batch_size * self._depth, 1,
+                   self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
     # Diff with ground truth.
-    top[2].reshape(self._batch_size * self._depth, 4, self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
+    top[2].reshape(self._batch_size * self._depth, 4,
+                   self._anchor_dims[0] * self._anchor_dims[1] * self._anchor_dims[2])
     # Masks.
     top[3].reshape(self._batch_size * self._depth, 4,
                    self._anchor_dims[0] * self._anchor_dims[1] *

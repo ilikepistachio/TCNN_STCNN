@@ -1,15 +1,11 @@
-#name: ucf_c3d
+
 layer {
   name: "data"
   type: "Python"
   top: "data"
-  top: "tois"
-  top: "labels"
-  top: "targets"
-  top: "mask"
-  top: "toi2"
+  top: "label"
   python_param {
-    module: 'data_layers.tpn_data_v3'
+    module: 'data_layers.deconv_data_layer'
     layer: 'DataLayer'
   }
 }
@@ -28,6 +24,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 64
     kernel_size: 3
     pad: 1
@@ -75,6 +72,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 128
     kernel_size: 3
     pad: 1
@@ -122,6 +120,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 256
     kernel_size: 3
     pad: 1
@@ -155,6 +154,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 256
     kernel_size: 3
     pad: 1
@@ -202,6 +202,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 512
     kernel_size: 3
     pad: 1
@@ -235,6 +236,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 512
     kernel_size: 3
     pad: 1
@@ -282,6 +284,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 512
     kernel_size: 3
     pad: 1
@@ -315,6 +318,7 @@ layer {
     decay_mult: 0
   }
   convolution_param {
+    engine: CUDNN
     num_output: 512
     kernel_size: 3
     pad: 1
@@ -334,146 +338,100 @@ layer {
   bottom: "conv5b"
   top: "conv5b"
 }
+# ----------------- 6th layer group --------------------
 layer {
-  name: "reshape"
-  type: "Reshape"
+  name: "conv4c"
+  type: "Convolution"
   bottom: "conv5b"
-  top: "reshape"
-  reshape_param {
-    shape { dim: -1 dim: 512 dim: 15 dim: 20}
+  top: "conv4c"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    engine: CUDNN
+    num_output: 512
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
   }
 }
 layer {
-  name: "roipool"
-  type: "ROIPooling"
-  bottom: "reshape"
-  bottom: "toi2"
-  top: "roi_pool1"
-  roi_pooling_param {
-    pooled_h: 4
-    pooled_w: 4
-    spatial_scale: 1 # 1 / 16
-  }
-}
-# ----------------- Additional layer group -------------
-layer {
-  name: "norm1"
-  type: "Normalization"
-  bottom: "roi_pool1"
-  top: "norm1"
+  name: "relu4c"
+  type: "ReLU"
+  bottom: "conv4c"
+  top: "conv4c"
 }
 layer {
-  name: "transpose"
-  type: "Clip2Img"
-  bottom: "conv2"
-  top: "transpose"
-}
-layer {
-  name: "roipool2"
-  type: "ROIPooling"
-  bottom: "transpose"
-  bottom: "tois"
-  top: "roi_pool2"
-  roi_pooling_param {
-    pooled_h: 16
-    pooled_w: 16
-    spatial_scale: 8 # 1 / 16
+  name: "trans4"
+  type: "DeconvTrans"
+  bottom: "conv4c"
+  top: "trans4"
+  deconv_trans_param {
+    stride: 2 stride: 2 stride: 2
   }
 }
 layer {
-  name: "norm2"
-  type: "Normalization"
-  bottom: "roi_pool2"
-  top: "norm2"
+  name: "conv4d"
+  type: "Convolution"
+  bottom: "conv4b"
+  top: "conv4d"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    engine: CUDNN
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
 }
 layer {
-  name: "concat"
+  name: "relu4d"
+  type: "ReLU"
+  bottom: "conv4d"
+  top: "conv4d"
+}
+layer {
+  name: "concat4"
   type: "Concat"
-  bottom: "norm1"
-  bottom: "norm2"
-  top: "concat"
+  bottom: "trans4"
+  bottom: "conv4d"
+  top: "concat4"
   concat_param {
     axis: 1
   }
 }
-layer {
-  name: "fcc"
-  type: "InnerProduct"
-  bottom: "concat"
-  top: "fcc"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  inner_product_param {
-    num_output: 8192
-    weight_filler {
-      type: "gaussian"
-      std: 0.005
-    }
-    bias_filler {
-      type: "constant"
-      value: 1
-    }
-  }
-}
-layer {
-  name: "reluc"
-  type: "ReLU"
-  bottom: "fcc"
-  top: "fcc"
-}
-# ----------------- 6th layer group --------------------
-layer {
-  name: "fc6"
-  type: "InnerProduct"
-  bottom: "fcc"
-  top: "fc6"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  inner_product_param {
-    num_output: 4096
-    weight_filler {
-      type: "gaussian"
-      std: 0.005
-    }
-    bias_filler {
-      type: "constant"
-      value: 1
-    }
-  }
-}
-layer {
-  name: "relu6"
-  type: "ReLU"
-  bottom: "fc6"
-  top: "fc6"
-}
-layer {
-  name: "drop6"
-  type: "Dropout"
-  bottom: "fc6"
-  top: "fc6"
-  dropout_param {
-    dropout_ratio: 0.5
-  }
-}
 # ----------------- 7th layer group --------------------
 layer {
-  name: "fc7"
-  type: "InnerProduct"
-  bottom: "fc6"
-  top: "fc7"
+  name: "conv3c"
+  type: "Convolution"
+  bottom: "concat4"
+  top: "conv3c"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -482,11 +440,14 @@ layer {
     lr_mult: 2
     decay_mult: 0
   }
-  inner_product_param {
-    num_output: 4096
+  convolution_param {
+    engine: CUDNN
+    num_output: 512
+    kernel_size: 3
+    pad: 1
     weight_filler {
       type: "gaussian"
-      std: 0.005
+      std: 0.01
     }
     bias_filler {
       type: "constant"
@@ -495,26 +456,212 @@ layer {
   }
 }
 layer {
-  name: "relu7"
+  name: "relu3c"
   type: "ReLU"
-  bottom: "fc7"
-  top: "fc7"
+  bottom: "conv3c"
+  top: "conv3c"
 }
 layer {
-  name: "drop7"
-  type: "Dropout"
-  bottom: "fc7"
-  top: "fc7"
-  dropout_param {
-    dropout_ratio: 0.5
+  name: "trans3"
+  type: "DeconvTrans"
+  bottom: "conv3c"
+  top: "trans3"
+  deconv_trans_param {
+    stride: 2 stride: 2 stride: 2
+  }
+}
+layer {
+  name: "conv3d"
+  type: "Convolution"
+  bottom: "conv3b"
+  top: "conv3d"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    engine: CUDNN
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layer {
+  name: "relu3d"
+  type: "ReLU"
+  bottom: "conv3d"
+  top: "conv3d"
+}
+layer {
+  name: "concat3"
+  type: "Concat"
+  bottom: "trans3"
+  bottom: "conv3d"
+  top: "concat3"
+  concat_param {
+    axis: 1
+  }
+}
+# ----------------- 8th layer group --------------------
+layer {
+  name: "conv2c"
+  type: "Convolution"
+  bottom: "concat3"
+  top: "conv2c"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    engine: CUDNN
+    num_output: 512
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layer {
+  name: "relu2c"
+  type: "ReLU"
+  bottom: "conv2c"
+  top: "conv2c"
+}
+layer {
+  name: "trans2"
+  type: "DeconvTrans"
+  bottom: "conv2c"
+  top: "trans2"
+  deconv_trans_param {
+    stride: 2 stride: 2 stride: 2
+  }
+}
+layer {
+  name: "conv2d"
+  type: "Convolution"
+  bottom: "conv2"
+  top: "conv2d"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    engine: CUDNN
+    num_output: 64
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layer {
+  name: "relu2d"
+  type: "ReLU"
+  bottom: "conv2d"
+  top: "conv2d"
+}
+layer {
+  name: "concat2"
+  type: "Concat"
+  bottom: "trans2"
+  bottom: "conv2d"
+  top: "concat2"
+  concat_param {
+    axis: 1
+  }
+}
+# ----------------- 9th layer group --------------------
+layer {
+  name: "conv1c"
+  type: "Convolution"
+  bottom: "concat2"
+  top: "conv1c"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    engine: CUDNN
+    num_output: 256
+    kernel_size: 3
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 1
+    }
+  }
+}
+layer {
+  name: "relu1c"
+  type: "ReLU"
+  bottom: "conv1c"
+  top: "conv1c"
+}
+layer {
+  name: "trans1"
+  type: "DeconvTrans"
+  bottom: "conv1c"
+  top: "trans1"
+  deconv_trans_param {
+    stride: 1 stride: 2 stride: 2
+  }
+}
+layer {
+  name: "concat1"
+  type: "Concat"
+  bottom: "trans1"
+  bottom: "conv1"
+  top: "concat1"
+  concat_param {
+    axis: 1
   }
 }
 # ----------------- loss layer group --------------------
 layer {
-  name: "fc8-2"
-  type: "InnerProduct"
-  bottom: "fc7"
-  top: "fc8-2"
+  name: "conv_pred"
+  type: "Convolution"
+  bottom: "concat1"
+  top: "logits"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -523,60 +670,11 @@ layer {
     lr_mult: 2
     decay_mult: 0
   }
-  inner_product_param {
-    num_output: 4
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 1
-    }
-  }
-}
-#layer {
-#  name: "prob"
-#  type: "Softmax"
-#  bottom: "fc8"
-#  top: "prob"
-#}
-layer {
-  name: "mask"
-  type: "Eltwise"
-  bottom: "fc8-2"
-  bottom: "mask"
-  top: "fc88"
-  propagate_down: 1
-  propagate_down: 0
-  eltwise_param {
-    operation: PROD
-  }
-}
-layer {
-  name: "l2loss"
-  type: "EuclideanLoss"
-  bottom: "fc88"
-  bottom: "targets"
-  top: "l2_error"
-  propagate_down: 1
-  propagate_down: 0
-}
-layer {
-  name: "fc8-3"
-  type: "InnerProduct"
-  bottom: "fc7"
-  top: "fc8-3"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  inner_product_param {
+  convolution_param {
+    engine: CUDNN
     num_output: 2
+    kernel_size: 3
+    pad: 1
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -587,23 +685,10 @@ layer {
     }
   }
 }
-#layer {
-#  name: "prob"
-#  type: "Softmax"
-#  bottom: "fc8"
-#  top: "prob"
-#}
 layer {
-  name: "tpn_cls"
+  name: "loss"
   type: "SoftmaxWithLoss"
-  bottom: "fc8-3"
-  bottom: "labels"
-  propagate_down: 1
-  propagate_down: 0
-  top: "tpn_cls_loss"
-  loss_weight: 1
-  loss_param {
-    ignore_label: -1
-    normalize: true
-  }
+  bottom: "logits"
+  bottom: "label"
+  top: "loss"
 }
