@@ -3,7 +3,7 @@ The Caffe data layer for training label classifier.
 This layer will parse pixel values and actionness labels to the network.
 '''
 import sys
-sys.path.insert(0, '/home/rhou/caffe/python')
+sys.path.insert(0, '/home/mubarakshah/caffe/python')
 import caffe
 from datasets.davis import Davis
 import numpy as np
@@ -15,8 +15,9 @@ class FakeData():
     import cv2
     import glob
     files = glob.glob('images/*.jpg')
-    self.images = np.array([cv2.imread(f) for f in files])
-    self.annotation = np.array([cv2.imread(f[:-4] + '.png') for f in files])
+    self.images = np.array([cv2.resize(cv2.imread(f), (320, 240)) for f in files])
+    self.annotation = np.array([cv2.resize(cv2.imread(f[:-4] + '.png'), (320, 240)) for f in files])
+    print(self.annotation.shape)
 
   def next_batch(self, batch_size, depth):
     images = np.empty(batch_size, depth, self.height, self.width, 3)

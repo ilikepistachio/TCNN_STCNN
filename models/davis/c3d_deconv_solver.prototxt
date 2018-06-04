@@ -1,17 +1,17 @@
 train_net: "models/davis/c3d_deconv_train.prototxt"
 
-base_lr: 0.0001
+base_lr: 0.00001
 lr_policy: "step"
 gamma: 0.1
-stepsize: 180000
+stepsize: 1800
 display: 20
 average_loss: 100
 momentum: 0.9
 weight_decay: 0.0005
 
-max_iter: 200000
+max_iter: 2000
 snapshot: 1000
-snapshot_prefix: "/home/rhou/models/davis_8_adam"
+snapshot_prefix: "davis_8_adam"
 # solver mode: CPU or GPU
 solver_mode: GPU
 solver_type: ADAM
