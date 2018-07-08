@@ -67,7 +67,6 @@ If you find T-CNN useful, please consider citing:
 1. Download the trained model
 2. the last layer of our trained model has 22 nodes corresponding to 21 possible frame-level classes(from the first to the last: background, action1-22)
 3. Run `python tpn_eval.py` for bounding boxes on each frame.
-4. Run `python cls_eval.py` for recogntion prediction.
 
 ### Train your own model:
 - Prepare pre-trained model as init: as explained in the paper, we use weights in sports1m model (`wget www.cs.ucf.edu/~rhou/files/c3d_pretrain_model`) to init our network.
